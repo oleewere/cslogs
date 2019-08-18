@@ -1,6 +1,6 @@
 builds:
 - main: main.go
-  binary: s3logs-zgrep
+  binary: cslogs
   goos:
   - linux
   - darwin
@@ -31,7 +31,7 @@ changelog:
     - '^docs:'
     - '^test:'
 brew:
-  name: s3logs-zgrep
+  name: cslogs
   github:
     owner: oleewere
     name: homebrew-repo
@@ -40,8 +40,8 @@ brew:
     email: oleewere@gmail.com
   folder: Formula
   homepage: "https://github.com/oleewere"
-  description: "Software for getting the closest airports."
+  description: "Software for download and reading zipped logs from cloud storage"
   test: |
-    system "#{bin}/s3logs-zgrep --version"
+    system "#{bin}/cslogs --version"
   install: |
-    bin.install "s3logs-zgrep"
+    bin.install "cslogs"

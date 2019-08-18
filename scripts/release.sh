@@ -4,12 +4,12 @@ readlinkf(){
 }
 
 if [ "$(uname -s)" = 'Linux' ]; then
-  S3LOGS_SCRIPT_DIR="`dirname "$(readlink -f "$0")"`"
+  CSLOGS_SCRIPT_DIR="`dirname "$(readlink -f "$0")"`"
 else
-  S3LOGS_SCRIPT_DIR="`dirname "$(readlinkf "$0")"`"
+  CSLOGS_SCRIPT_DIR="`dirname "$(readlinkf "$0")"`"
 fi
 
-S3LOGS_ROOT_DIR="`dirname \"$S3LOGS_SCRIPT_DIR\"`"
+CSLOGS_ROOT_DIR="`dirname \"$CSLOGS_SCRIPT_DIR\"`"
 
 function print_help() {
   cat << EOF
@@ -101,9 +101,9 @@ function release_and_push_actual_branch() {
 
 function update_readme_version() {
   local next_release="$1"
-  local readme_md_location="$S3LOGS_ROOT_DIR/README.md"
+  local readme_md_location="$CSLOGS_ROOT_DIR/README.md"
   local version_number=$(get_version_number $next_release)
-  sed -i.bak "s/S3LOGS_VERSION=[[:digit:]]\.[[:digit:]]\.[[:digit:]]/S3LOGS_VERSION=${version_number}/" "$readme_md_location"
+  sed -i.bak "s/CSLOGS_VERSION=[[:digit:]]\.[[:digit:]]\.[[:digit:]]/CSLOGS_VERSION=${version_number}/" "$readme_md_location"
   rm "$readme_md_location.bak"
   git add "$readme_md_location"
   git commit -m "Update README.md (for release version: $next_release)"
@@ -172,11 +172,11 @@ function release_patch() {
 }
 
 function run_release() {
-  docker run -w /go/src/github.com/oleewere/s3logs-zgrep -e GITHUB_TOKEN=$GITHUB_TOKEN --rm -v $S3LOGS_ROOT_DIR/vendor/:/go/src/ -v $S3LOGS_ROOT_DIR:/go/src/github.com/oleewere/s3logs-zgrep goreleaser/goreleaser:latest --debug --rm-dist
+  docker run -w /go/src/github.com/oleewere/cslogs -e GITHUB_TOKEN=$GITHUB_TOKEN --rm -v $CSLOGS_ROOT_DIR/vendor/:/go/src/ -v $CSLOGS_ROOT_DIR:/go/src/github.com/oleewere/cslogs goreleaser/goreleaser:latest --debug --rm-dist
 }
 
 function build_only() {
-  docker run -w /go/src/github.com/oleewere/s3logs-zgrep -e GITHUB_TOKEN=$GITHUB_TOKEN --rm -v $S3LOGS_ROOT_DIR/vendor/:/go/src/ -v $S3LOGS_ROOT_DIR:/go/src/github.com/oleewere/s3logs-zgrep goreleaser/goreleaser:latest --snapshot --debug --rm-dist --skip-publish
+  docker run -w /go/src/github.com/oleewere/cslogs -e GITHUB_TOKEN=$GITHUB_TOKEN --rm -v $CSLOGS_ROOT_DIR/vendor/:/go/src/ -v $CSLOGS_ROOT_DIR:/go/src/github.com/oleewere/cslogs goreleaser/goreleaser:latest --snapshot --debug --rm-dist --skip-publish
 }
 
 function main() {

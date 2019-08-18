@@ -10,8 +10,8 @@ import (
 // StartApplication holder of cli commands, can start cli application
 func StartApplication(version string, gitRevString string) {
 	app := cli.NewApp()
-	app.Name = "s3logs-zgrep"
-	app.Usage = "Tool for download and grep in s3 zipped logs"
+	app.Name = "cslogs"
+	app.Usage = "Tool for download and grep in logs on cloud storage"
 	app.EnableBashCompletion = true
 	app.UsageText = "s3logs-zgrep command [command options] [arguments...]"
 	if len(version) > 0 {
