@@ -26,6 +26,8 @@ func StartApplication(version string, gitRevString string) {
 	app.Author = "Oliver Mihaly Szabo"
 	app.Copyright = "Copyright 2019 Oliver Mihaly Szabo"
 	app.Commands = []cli.Command{}
+	app.Commands = append(app.Commands, DownloadLogsCommand())
+	app.Commands = append(app.Commands, GrepCommand())
 	err := app.Run(os.Args)
 	if err != nil {
 		fmt.Println(err)
