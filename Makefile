@@ -16,7 +16,7 @@ else
 endif
 
 build:
-	go build -ldflags "-X main.GitRevString=$(GIT_REV_SHORT) -X main.Version=$(VERSION_FOR_BUILD)" -o s3logs-zgrep
+	go build -ldflags "-X main.GitRevString=$(GIT_REV_SHORT) -X main.Version=$(VERSION_FOR_BUILD)" -o cslogs
 
 install:
 	go install -ldflags "-X main.GitRevString=$(GIT_REV_SHORT) -X main.Version=$(VERSION_FOR_BUILD)"
