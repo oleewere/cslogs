@@ -1,5 +1,9 @@
 package main
 
+import (
+	"github.com/oleewere/cslogs/cli"
+)
+
 // Version that will be generated during the build as a constant
 var Version string
 
@@ -7,5 +11,5 @@ var Version string
 var GitRevString string
 
 func main() {
-
+	cli.StartApplication(Version, GitRevString)
 }

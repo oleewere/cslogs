@@ -13,7 +13,7 @@ func StartApplication(version string, gitRevString string) {
 	app.Name = "cslogs"
 	app.Usage = "Tool for download and grep in logs on cloud storage"
 	app.EnableBashCompletion = true
-	app.UsageText = "s3logs-zgrep command [command options] [arguments...]"
+	app.UsageText = "cslogs command [command options] [arguments...]"
 	if len(version) > 0 {
 		app.Version = version
 	} else {

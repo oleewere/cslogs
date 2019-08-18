@@ -1,4 +1,4 @@
-module github.com/oleewere/s3logs-zgrep
+module github.com/oleewere/cslogs
 
 go 1.12
 
