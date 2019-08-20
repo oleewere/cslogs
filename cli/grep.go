@@ -1,6 +1,12 @@
 package cli
 
-import "github.com/urfave/cli"
+import (
+	"fmt"
+	"os"
+
+	"github.com/oleewere/cslogs/grep"
+	"github.com/urfave/cli"
+)
 
 // GrepCommand for grepping in text files
 func GrepCommand() cli.Command {
@@ -8,7 +14,12 @@ func GrepCommand() cli.Command {
 		Name:  "grep",
 		Usage: "Grep in text files",
 		Action: func(c *cli.Context) error {
-			return nil
+			waitErr, err := grep.Execute(grep.Options{})
+			if waitErr != nil {
+				fmt.Println(fmt.Sprintf("Grep error output: %v", waitErr))
+				os.Exit(1)
+			}
+			return err
 		},
 		Flags: []cli.Flag{},
 	}
