@@ -12,6 +12,7 @@ import (
 type Options struct {
 	Pattern string
 	Folder  string
+	File    string
 	Colored bool
 	Context int
 	Format  string
@@ -29,8 +30,9 @@ func CreateGrepCommand(options Options) *exec.Cmd {
 		commandArgs = append(commandArgs, "-C")
 		commandArgs = append(commandArgs, string(options.Context))
 	}
-	//options.Folder = "/Users/oliverszabo/Downloads/s3-download"
-	//options.Pattern = "salt"
+	if options.Colored {
+		commandArgs = append(commandArgs, "--color=always")
+	}
 	commandArgs = append(commandArgs, options.Pattern)
 	commandArgs = append(commandArgs, options.Folder)
 
