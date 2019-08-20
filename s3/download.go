@@ -3,8 +3,8 @@ package s3
 import (
 	"fmt"
 	"io"
-	"log"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -13,21 +13,25 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 )
 
-var numberOfRetrievedFiles = 0
-
-func DownloadFiles(profile string, bucket string, baseFolder string, pattern string, downloadLocation string) {
-	fmt.Println("Getting all files from the s3 bucket :", bucket)
+// DownloadFiles download files recursively from s3 (based on bucket + base folder + pattern + download location)
+func DownloadFiles(profile string, bucket string, baseFolder string, pattern string, downloadLocation string) error {
+	fmt.Println("Getting files from the s3 bucket :", bucket)
 	fmt.Println("And will download them to :", downloadLocation)
-	sess := makeSession(profile)
-	getBucketObjects(sess, bucket, baseFolder, pattern)
-	// Print number of retrieved files
-	fmt.Printf("We got %d files from our s3 bucket\n", numberOfRetrievedFiles)
+	sess, err := MakeSession(profile)
+	if err != nil {
+		return err
+	}
+	numberOfObjects, objErr := DownloadBucketObjects(sess, bucket, baseFolder, pattern, downloadLocation)
+	if objErr != nil {
+		return objErr
+	}
+	fmt.Println(fmt.Sprintf("Number of downloaded objects: %d", numberOfObjects))
+	return nil
 }
 
-func makeSession(profile string) *session.Session {
+// MakeSession create an aws client session, based on default or custom settings
+func MakeSession(profile string) (*session.Session, error) {
 	os.Setenv("AWS_SDK_LOAD_CONFIG", "1")
-	//homedir, _ := os.UserHomeDir()
-
 	var sess *session.Session
 	var err error
 	if true {
@@ -47,89 +51,88 @@ func makeSession(profile string) *session.Session {
 		})
 	}
 	if err != nil {
-		fmt.Println("failed to create session,", err)
-		fmt.Println(err)
-		os.Exit(2)
+		return nil, err
 	}
 
-	return sess
+	return sess, nil
 }
 
-func getBucketObjects(sess *session.Session, bucket string, baseFolder string, pattern string) {
+// DownloadBucketObjects download objects recursively from s3 (based on bucket + base folder + pattern + download location)
+func DownloadBucketObjects(sess *session.Session, bucket string, baseFolder string, pattern string, downloadLocation string) (int, error) {
 	query := &s3.ListObjectsV2Input{
 		Bucket: aws.String(bucket),
 		Prefix: aws.String(baseFolder),
 	}
 	svc := s3.New(sess)
-
+	numberOfObjects := 0
 	// Flag used to check if we need to go further
 	truncatedListing := true
 
 	for truncatedListing {
 		resp, err := svc.ListObjectsV2(query)
-
 		if err != nil {
-			// Print the error.
-			fmt.Println(err.Error())
-			return
+			return 0, err
 		}
-		// Get all files
-		//getObjectsAll(resp, svc)
 		for _, key := range resp.Contents {
 			if len(pattern) > 0 {
 				if strings.Contains(*key.Key, pattern) {
-					fmt.Println(*key.Key)
+					objErr := DownloadObject(key, svc, bucket, downloadLocation)
+					if objErr != nil {
+						return numberOfObjects, objErr
+					}
+					numberOfObjects++
 				}
 			} else {
-				fmt.Println(*key.Key)
+				objErr := DownloadObject(key, svc, bucket, downloadLocation)
+				if objErr != nil {
+					return numberOfObjects, objErr
+				}
+				numberOfObjects++
 			}
 		}
-		// Set continuation token
 		query.ContinuationToken = resp.NextContinuationToken
 		truncatedListing = *resp.IsTruncated
 	}
+	return numberOfObjects, nil
 }
 
-func getObjectsAll(bucketObjectsList *s3.ListObjectsV2Output, s3Client *s3.S3) {
-	//fmt.Println("One ring to rule them all")
-	// Iterate through the files inside the bucket
-	for _, key := range bucketObjectsList.Contents {
-		fmt.Println(*key.Key)
-		destFilename := *key.Key
-		if strings.HasSuffix(*key.Key, "/") {
-			fmt.Println("Got a directory")
-			continue
-		}
-		numberOfRetrievedFiles++
-		if strings.Contains(*key.Key, "/") {
-			var dirTree string
-			// split
-			s3FileFullPathList := strings.Split(*key.Key, "/")
-			fmt.Println(s3FileFullPathList)
-			fmt.Println("destFilename " + destFilename)
-			for _, dir := range s3FileFullPathList[:len(s3FileFullPathList)-1] {
-				dirTree += "/" + dir
-			}
-			os.MkdirAll(os.Args[3]+"/"+dirTree, 0775)
-		}
-		out, err := s3Client.GetObject(&s3.GetObjectInput{
-			Bucket: aws.String(os.Args[2]),
-			Key:    key.Key,
-		})
-		if err != nil {
-			log.Fatal(err)
-		}
-		destFilePath := os.Args[3] + destFilename
-		destFile, err := os.Create(destFilePath)
-		if err != nil {
-			log.Fatal(err)
-		}
-		bytes, err := io.Copy(destFile, out.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Printf("File %s contanin %d bytes\n", destFilePath, bytes)
-		out.Body.Close()
-		destFile.Close()
+// DownloadObject download a specific s3 object to a predefined location
+func DownloadObject(key *s3.Object, s3Client *s3.S3, bucket string, downloadLocation string) error {
+	destFilename := *key.Key
+	if strings.HasSuffix(*key.Key, "/") {
+		fmt.Println("Got a directory")
+		return nil
 	}
+	fmt.Println(*key.Key)
+	if strings.Contains(*key.Key, "/") {
+		var dirTree string
+		// split
+		s3FileFullPathList := strings.Split(*key.Key, "/")
+		fmt.Println(s3FileFullPathList)
+		fmt.Println("destFilename " + destFilename)
+		for _, dir := range s3FileFullPathList[:len(s3FileFullPathList)-1] {
+			dirTree = path.Join(dirTree, dir)
+		}
+		os.MkdirAll(path.Join(downloadLocation, dirTree), 0775)
+	}
+	out, err := s3Client.GetObject(&s3.GetObjectInput{
+		Bucket: aws.String(bucket),
+		Key:    key.Key,
+	})
+	if err != nil {
+		return err
+	}
+	defer out.Body.Close()
+	destFilePath := path.Join(downloadLocation, destFilename)
+	destFile, err := os.Create(destFilePath)
+	if err != nil {
+		return err
+	}
+	defer destFile.Close()
+	bytes, err := io.Copy(destFile, out.Body)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("File %s contanin %d bytes\n", destFilePath, bytes)
+	return nil
 }
